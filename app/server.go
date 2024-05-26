@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	"flag"
 	"fmt"
 	"log"
@@ -69,7 +70,12 @@ func handleConnections(c net.Conn) {
 
 		if ok {
 			if strings.Contains(v, "gzip") {
-				response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
+				buffer := new(bytes.Buffer)
+				compressor := gzip.NewWriter(buffer)
+				compressor.Write([]byte(msg))
+				compressor.Close()
+
+				response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(buffer.String()), buffer.String())
 				handleResponse(c, response)
 				return
 			}
