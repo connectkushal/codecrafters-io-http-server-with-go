@@ -93,10 +93,15 @@ func handleConnections(c net.Conn) {
 
 	case strings.HasPrefix(req.Target, "/files/"):
 		filename := strings.Split(req.Target, "/")[2]
+
+		if len(filename) == 0 {
+			c.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\nFilename cannot be empty"))
+			return
+		}
+
 		path := path.Join(*dir, filename)
 
 		switch req.Method {
-
 		case "GET":
 			contents, err := os.ReadFile(path)
 			if err != nil {
@@ -113,12 +118,6 @@ func handleConnections(c net.Conn) {
 			return
 
 		case "POST":
-			if len(filename) == 0 {
-				//TODO: Use the correct status for bad input
-				c.Write([]byte("HTTP/1.1 503 Internal Server Error\r\n\r\n Filename cannot be empty"))
-				return
-			}
-
 			err := os.WriteFile(path, []byte(req.Body), 0644)
 			if err != nil {
 				log.Println(err)
