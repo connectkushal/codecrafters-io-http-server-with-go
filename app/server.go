@@ -35,18 +35,31 @@ func main() {
 
 	fmt.Println(req)
 
-	if req.Target == "/" {
-		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
-	}
+	switch {
 
-	if strings.HasPrefix(req.Target, "/echo/") {
+	case req.Target == "/":
+		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+
+	case strings.HasPrefix(req.Target, "/echo/"):
 		msg := strings.Split(req.Target, "/")[2]
-		fmt.Println(msg)
+		//fmt.Println(msg)
 		var response = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
 
 		conn.Write([]byte(response))
-	} else {
+	case req.Target == "/user-agent":
+		var agent string
+		for _, v := range req.Headers {
+			if v.Name == "User-Agent" {
+				agent = v.Value
+			}
+		}
+
+		var response = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(agent), agent)
+
+		conn.Write([]byte(response))
+	default:
 		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+
 	}
 }
 
