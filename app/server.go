@@ -26,10 +26,67 @@ func main() {
 	buffer := make([]byte, 1024)
 	conn.Read(buffer)
 
-	fmt.Println(string(buffer))
-	if strings.HasPrefix(string(buffer), "GET / HTTP/1.1") {
+	// type Request struct {
+	// 	method, target, http_version string
+	// }
+
+	//fmt.Println(string(buffer))
+	req := ParseRequest(buffer)
+
+	fmt.Println(req)
+
+	if req.Target == "/" {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	}
+
+	if strings.HasPrefix(req.Target, "/echo/") {
+		msg := strings.Split(req.Target, "/")[2]
+		fmt.Println(msg)
+		var response = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
+
+		conn.Write([]byte(response))
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 	}
+}
+
+type Request struct {
+	Method, Target string
+	Headers        []Header
+	Body           string
+}
+
+type Header struct {
+	Name, Value string
+}
+
+func ParseRequest(b []byte) Request {
+	raw_req_string := string(b)
+	r := Request{}
+
+	req_parts := strings.Split(raw_req_string, "\r\n\r\n")
+
+	r.Body = req_parts[1]
+
+	req_lines := strings.Split(req_parts[0], "\r\n")
+	req_line_1 := strings.Split(req_lines[0], " ")
+	r.Method = req_line_1[0]
+	r.Target = req_line_1[1]
+
+	raw_headers := req_lines[1:]
+
+	headers := make([]Header, 0)
+
+	for _, v := range raw_headers {
+		h := strings.Split(v, ": ")
+		headers = append(headers, Header{h[0], h[1]})
+	}
+
+	r.Headers = headers
+	return r
+
+	//fmt.Println(req_line[0], ",", req_line[1])
+	// fmt.Println("\n1:", req_line, "\n2:", headers, "\n3:", body)
+	// fmt.Println("\n1:", headers[0], "\n2:", headers[1], "\n3:", headers[2])
+	// fmt.Printf("%T", headers)
 }
