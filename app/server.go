@@ -65,11 +65,10 @@ func handleConnections(c net.Conn) {
 
 	case strings.HasPrefix(req.Target, "/echo/"):
 		v, ok := req.Headers["accept-encoding"]
-		fmt.Println(v)
 		msg := strings.Split(req.Target, "/")[2]
 
 		if ok {
-			if v == "gzip" {
+			if strings.Contains(v, "gzip") {
 				response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
 				handleResponse(c, response)
 				return
