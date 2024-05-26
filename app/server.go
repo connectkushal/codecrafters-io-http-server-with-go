@@ -13,9 +13,8 @@ import (
 )
 
 type Request struct {
-	Method, Target string
-	Headers        map[string]string
-	Body           string
+	Method, Target, Body string
+	Headers              map[string]string
 }
 
 var dir *string
