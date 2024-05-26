@@ -65,9 +65,9 @@ func handleConnections(c net.Conn) {
 		return
 
 	case strings.HasPrefix(req.Target, "/echo/"):
-		v, ok := req.Headers["accept-encoding"]
-		msg := strings.Split(req.Target, "/")[2]
+		msg := strings.Split(req.Target, "/")[2] // the part of url after "/echo/"
 
+		v, ok := req.Headers["accept-encoding"]
 		if ok {
 			if strings.Contains(v, "gzip") {
 				buffer := new(bytes.Buffer)
@@ -81,11 +81,11 @@ func handleConnections(c net.Conn) {
 			}
 		}
 
-		//fmt.Println(msg)
 		var response = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
 
 		handleResponse(c, response)
 		return
+
 	case req.Target == "/user-agent":
 		var response = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(req.Headers["user-agent"]), req.Headers["user-agent"])
 
@@ -109,6 +109,7 @@ func handleConnections(c net.Conn) {
 
 			fmt.Println("file exists, reading file:", path)
 			response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(contents), string(contents))
+
 			handleResponse(c, response)
 			return
 
@@ -125,6 +126,7 @@ func handleConnections(c net.Conn) {
 				c.Write([]byte("HTTP/1.1 503 Internal Server Error\r\n"))
 				return
 			}
+
 			handleResponse(c, "HTTP/1.1 201 Created\r\n\r\n")
 			return
 		}
@@ -167,7 +169,3 @@ func handleResponse(c net.Conn, s string) {
 		log.Println(err)
 	}
 }
-
-// func notFoundResponse(c net.Conn) error {
-// 	return handleResponse(c, "HTTP/1.1 404 Not Found\r\n\r\n")
-// }
