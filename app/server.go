@@ -46,15 +46,9 @@ func main() {
 		var response = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
 
 		conn.Write([]byte(response))
-	case req.Target == "/user-agent":
-		var agent string
-		for _, v := range req.Headers {
-			if v.Name == "User-Agent" {
-				agent = v.Value
-			}
-		}
 
-		var response = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(agent), agent)
+	case req.Target == "/user-agent":
+		var response = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(req.Headers["User-Agent"]), req.Headers["User-Agent"])
 
 		conn.Write([]byte(response))
 	default:
@@ -65,17 +59,14 @@ func main() {
 
 type Request struct {
 	Method, Target string
-	Headers        []Header
+	Headers        map[string]string
 	Body           string
-}
-
-type Header struct {
-	Name, Value string
 }
 
 func ParseRequest(b []byte) Request {
 	raw_req_string := string(b)
 	r := Request{}
+	r.Headers = make(map[string]string)
 
 	req_parts := strings.Split(raw_req_string, "\r\n\r\n")
 
@@ -88,18 +79,10 @@ func ParseRequest(b []byte) Request {
 
 	raw_headers := req_lines[1:]
 
-	headers := make([]Header, 0)
-
 	for _, v := range raw_headers {
 		h := strings.Split(v, ": ")
-		headers = append(headers, Header{h[0], h[1]})
+		r.Headers[h[0]] = h[1]
+
 	}
-
-	r.Headers = headers
 	return r
-
-	//fmt.Println(req_line[0], ",", req_line[1])
-	// fmt.Println("\n1:", req_line, "\n2:", headers, "\n3:", body)
-	// fmt.Println("\n1:", headers[0], "\n2:", headers[1], "\n3:", headers[2])
-	// fmt.Printf("%T", headers)
 }
