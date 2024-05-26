@@ -22,5 +22,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	c.Write([]byte("Http/1.1 200 OK \r\n\r\n"))
+	c.Write([]byte("HTTP/1.1 200 OK \r\n\r\n"))
 }
