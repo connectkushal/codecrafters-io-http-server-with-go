@@ -16,44 +16,16 @@ func main() {
 	}
 
 	defer l.Close()
-	conn, err := l.Accept()
 
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
-	}
+	for {
+		conn, err := l.Accept()
 
-	buffer := make([]byte, 1024)
-	conn.Read(buffer)
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
 
-	// type Request struct {
-	// 	method, target, http_version string
-	// }
-
-	//fmt.Println(string(buffer))
-	req := ParseRequest(buffer)
-
-	fmt.Println(req)
-
-	switch {
-
-	case req.Target == "/":
-		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
-
-	case strings.HasPrefix(req.Target, "/echo/"):
-		msg := strings.Split(req.Target, "/")[2]
-		//fmt.Println(msg)
-		var response = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
-
-		conn.Write([]byte(response))
-
-	case req.Target == "/user-agent":
-		var response = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(req.Headers["User-Agent"]), req.Headers["User-Agent"])
-
-		conn.Write([]byte(response))
-	default:
-		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
-
+		go handleConnections(conn)
 	}
 }
 
@@ -85,4 +57,41 @@ func ParseRequest(b []byte) Request {
 
 	}
 	return r
+}
+
+func handleConnections(c net.Conn) error {
+
+	buffer := make([]byte, 1024)
+	_, err := c.Read(buffer)
+	if err != nil {
+		return err
+	}
+
+	req := ParseRequest(buffer)
+
+	fmt.Println(req)
+
+	switch {
+	case req.Target == "/":
+		return handleResponse(c, "HTTP/1.1 200 OK\r\n\r\n")
+
+	case strings.HasPrefix(req.Target, "/echo/"):
+		msg := strings.Split(req.Target, "/")[2]
+		//fmt.Println(msg)
+		var response = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
+
+		return handleResponse(c, response)
+
+	case req.Target == "/user-agent":
+		var response = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(req.Headers["User-Agent"]), req.Headers["User-Agent"])
+
+		return handleResponse(c, response)
+	default:
+		return handleResponse(c, "HTTP/1.1 404 Not Found\r\n\r\n")
+	}
+}
+
+func handleResponse(c net.Conn, s string) error {
+	_, err := c.Write([]byte(s))
+	return err
 }
